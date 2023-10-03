@@ -1,6 +1,7 @@
 package app
 
 import (
+	"flag"
 	"fmt"
 	"log"
 	"net/http"
@@ -9,6 +10,7 @@ import (
 	"github.com/VegaASantoso/goToko/database/seeders"
 	"github.com/gorilla/mux"
 	"github.com/joho/godotenv"
+	"github.com/urfave/cli"
 	"gorm.io/driver/postgres"
 	"gorm.io/gorm"
 )
@@ -39,12 +41,12 @@ func (server *Server) Initialize(appConfig AppConfig, dbConfig DBConfig) {
 	fmt.Println("Welcome to " + appConfig.AppName)
 
 	// connect ke database postgresSQL
-	server.initializeDB(dbConfig)
+	// server.initializeDB(dbConfig)
 	
 	server.initializeRoutes()
 
 	// seeders
-	seeders.DBSeed(server.DB)
+	// seeders.DBSeed(server.DB)
 
 }
 
@@ -59,8 +61,11 @@ func (server *Server) initializeDB(dbConfig DBConfig){
 		panic ("Failed connection in database server")
 	}
 
+}
+
+func (server *Server) dbMigrate(){
 	for _, model := range RegisterModels(){
-		err = server.DB.Debug().AutoMigrate(model.Model)
+		err := server.DB.Debug().AutoMigrate(model.Model)
 
 		if err != nil{
 			log.Fatal(err)
@@ -70,6 +75,36 @@ func (server *Server) initializeDB(dbConfig DBConfig){
 	fmt.Println("Database migrated successfully")
 }
 
+// pemisahan menggunakan cli 
+func (server *Server) initComands(config AppConfig, dbConfig DBConfig){
+	server.initializeDB(dbConfig)
+
+	cmdApp := cli.NewApp()
+	cmdApp.Commands = []cli.Command{
+		{
+			Name : "db:migrate",
+			Action : func(c *cli.Context) error {
+				server.dbMigrate()
+				return nil
+			},
+		},
+		{
+			Name : "db:seed",
+			Action: func(c *cli.Context) error {
+				err := seeders.DBSeed(server.DB)
+				if err != nil{
+					log.Fatal(err)
+				}
+				return nil
+			},
+			
+		},
+	}
+
+	if err := cmdApp.Run(os.Args); err != nil{
+		log.Fatal(err)
+	}
+}
 
 //func pemberian default value pada .env
 func getEnv(key, fallback string) string {
@@ -93,7 +128,7 @@ func (server *Server) Run(addr string){
 func Run(){
 	var server = Server{}
 	var appConfig = AppConfig{}
-	var dbconfig = DBConfig{}
+	var dbConfig = DBConfig{}
 
 	if err := godotenv.Load(); err != nil{
 		log.Fatal("Error on loading .env file")
@@ -105,13 +140,20 @@ func Run(){
 	appConfig.AppPort = getEnv("APP_PORT", "9000")
 
 	// .env pada database
-	dbconfig.DBHost = getEnv("DB_HOST", "localhost")
-	dbconfig.DBUser = getEnv("DB_USER", "vega")
-	dbconfig.DBPassword = getEnv("DB_PASSWORD", "password")
-	dbconfig.DBName = getEnv("DB_NAME", "latihan_gotokodb")
-	dbconfig.DBPort = getEnv("DB_PORT", "5432")
+	dbConfig.DBHost = getEnv("DB_HOST", "localhost")
+	dbConfig.DBUser = getEnv("DB_USER", "vega")
+	dbConfig.DBPassword = getEnv("DB_PASSWORD", "password")
+	dbConfig.DBName = getEnv("DB_NAME", "latihan_gotokodb")
+	dbConfig.DBPort = getEnv("DB_PORT", "5432")
 
-	server.Initialize(appConfig, dbconfig)
-	server.Run(":" + appConfig.AppPort)
+	flag.Parse()
+	arg := flag.Arg(0)
+	if arg != ""{
+		server.initComands(appConfig, dbConfig)
+	}else{
+		server.Initialize(appConfig, dbConfig)
+		server.Run(":" + appConfig.AppPort)
+	}
+
 }
 
