@@ -6,6 +6,7 @@ import (
 	"net/http"
 	"os"
 
+	"github.com/VegaASantoso/goToko/database/seeders"
 	"github.com/gorilla/mux"
 	"github.com/joho/godotenv"
 	"gorm.io/driver/postgres"
@@ -41,6 +42,10 @@ func (server *Server) Initialize(appConfig AppConfig, dbConfig DBConfig) {
 	server.initializeDB(dbConfig)
 	
 	server.initializeRoutes()
+
+	// seeders
+	seeders.DBSeed(server.DB)
+
 }
 
 
