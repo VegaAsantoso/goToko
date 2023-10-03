@@ -38,6 +38,14 @@ func (server *Server) Initialize(appConfig AppConfig, dbConfig DBConfig) {
 	fmt.Println("Welcome to " + appConfig.AppName)
 
 	// connect ke database postgresSQL
+	server.initializeDB(dbConfig)
+	
+	server.initializeRoutes()
+}
+
+
+// Method initialize database
+func (server *Server) initializeDB(dbConfig DBConfig){
 	var err error
 	dsn := fmt.Sprintf("host=%s user=%s password=%s dbname=%s port=%s sslmode=disable TimeZone=Asia/Jakarta", dbConfig.DBHost, dbConfig.DBUser, dbConfig.DBPassword, dbConfig.DBName, dbConfig.DBPort)
 	server.DB, err = gorm.Open(postgres.Open(dsn), &gorm.Config{})
@@ -46,17 +54,17 @@ func (server *Server) Initialize(appConfig AppConfig, dbConfig DBConfig) {
 		panic ("Failed connection in database server")
 	}
 
-	
-	server.Router = mux.NewRouter()
-	server.initializeRoutes()
+	for _, model := range RegisterModels(){
+		err = server.DB.Debug().AutoMigrate(model.Model)
+
+		if err != nil{
+			log.Fatal(err)
+		}
+	}
+
+	fmt.Println("Database migrated successfully")
 }
 
-// method Run
-func (server *Server) Run(addr string){
-	
-	fmt.Printf("Listening to port %s", addr)
-	log.Fatal(http.ListenAndServe(addr, server.Router))
-}
 
 //func pemberian default value pada .env
 func getEnv(key, fallback string) string {
@@ -66,6 +74,15 @@ func getEnv(key, fallback string) string {
 
 	return fallback
 }
+
+
+// method Run
+func (server *Server) Run(addr string){
+	
+	fmt.Printf("Listening to port %s", addr)
+	log.Fatal(http.ListenAndServe(addr, server.Router))
+}
+
 
 // func pemanggilan pertama kali dieksekusi
 func Run(){
