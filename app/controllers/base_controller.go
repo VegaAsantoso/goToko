@@ -40,7 +40,7 @@ func (server *Server) Initialize(appConfig AppConfig, dbConfig DBConfig) {
 	fmt.Println("Welcome to " + appConfig.AppName)
 
 	// connect ke database postgresSQL
-	// server.initializeDB(dbConfig)
+	server.initializeDB(dbConfig)
 
 	server.initializeRoutes()
 
