@@ -10,6 +10,7 @@ import (
 	"github.com/VegaASantoso/goToko/app/models"
 	"github.com/VegaASantoso/goToko/database/seeders"
 	"github.com/gorilla/mux"
+	"github.com/gorilla/sessions"
 	"github.com/urfave/cli"
 	"gorm.io/driver/postgres"
 	"gorm.io/gorm"
@@ -61,6 +62,8 @@ type PaginationParams struct{
 	CurrentPage int32
 }
 
+var store = sessions.NewCookieStore([]byte(os.Getenv("SESSION_KEY")))
+var sessionShoppingCart = "shopping-cart-session"
 
 // method Initialize
 func (server *Server) Initialize(appConfig AppConfig, dbConfig DBConfig) {
