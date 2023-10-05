@@ -21,7 +21,7 @@ type Product struct {
 	Stock            int
 	Weight           decimal.Decimal `gorm:"type:decimal(10,2);"`
 	ShortDescription string          `gorm:"type:text"`
-	Desciption       string          `gorm:"type:text"`
+	Description      string          `gorm:"type:text"`
 	Status           int             `gorm:"defalt:0"`
 	CreatedAt        time.Time
 	UpdatedAt        time.Time
@@ -46,4 +46,18 @@ func (p *Product) GetProducts(db *gorm.DB, perPage int, page int) (*[]Product, i
 	}
 
 	return &products, count, nil
+}
+
+
+func (p *Product) FindBySlug(db *gorm.DB, slug string) (*Product, error){
+	var err error
+	var product Product
+
+	err = db.Debug().Preload("ProductImages").Model(&Product{}).Where("slug = ?", slug).First(&product).Error
+	if err != nil{
+		return nil, err
+	}
+
+	return &product, nil
+
 }
